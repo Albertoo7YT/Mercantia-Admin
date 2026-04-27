@@ -1,0 +1,69 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Tenant {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  apiUrl    String
+  apiToken  String
+  status    String   @default("active")
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  syncs BackupSync[]
+  logs  OperationLog[]
+}
+
+model BackupTarget {
+  id         String   @id @default(cuid())
+  name       String
+  host       String
+  port       Int      @default(22)
+  username   String
+  sshKeyPath String
+  remotePath String
+  isDefault  Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  syncs BackupSync[]
+}
+
+model BackupSync {
+  id             String        @id @default(cuid())
+  tenantId       String
+  tenant         Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  backupTargetId String?
+  backupTarget   BackupTarget? @relation(fields: [backupTargetId], references: [id])
+  sourceFile     String
+  status         String
+  sizeBytes      BigInt?
+  durationMs     Int?
+  errorMessage   String?
+  createdAt      DateTime      @default(now())
+
+  @@index([tenantId, createdAt])
+}
+
+model OperationLog {
+  id           String   @id @default(cuid())
+  tenantId     String?
+  tenant       Tenant?  @relation(fields: [tenantId], references: [id], onDelete: SetNull)
+  action       String
+  actor        String   @default("admin")
+  details      Json?
+  status       String
+  errorMessage String?
+  createdAt    DateTime @default(now())
+
+  @@index([tenantId, createdAt])
+  @@index([action, createdAt])
+}
