@@ -1511,4 +1511,41 @@ export const tenantApi = {
         { action: "tenant.backups.restore" },
       ),
   },
+  invoices: {
+    /**
+     * Upsert (POST). El cliente guarda/actualiza la factura por `number`.
+     */
+    push: (
+      id: string,
+      payload: {
+        number: string;
+        periodMonth: string;
+        amountCents: number;
+        status: "pending" | "paid" | "cancelled";
+        issuedAt: string;
+        dueDate: string | null;
+        paidAt: string | null;
+        paymentMethod: string | null;
+        paymentReference: string | null;
+        notes: string | null;
+      },
+    ) =>
+      makeTenantApiCall<{ ok: boolean }>(
+        id,
+        "/api/admin/system/invoices",
+        { method: "POST", body: payload, timeoutMs: 10_000 },
+        { action: "tenant.invoices.push" },
+      ),
+    /**
+     * Borra (o cancela) una factura del cliente. El cliente debe aceptar
+     * DELETE por `number`.
+     */
+    delete: (id: string, number: string) =>
+      makeTenantApiCall<{ ok: boolean }>(
+        id,
+        `/api/admin/system/invoices/${encodeURIComponent(number)}`,
+        { method: "DELETE" },
+        { action: "tenant.invoices.delete" },
+      ),
+  },
 };

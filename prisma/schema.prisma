@@ -41,6 +41,44 @@ model Tenant {
   logs         OperationLog[]
   subscription TenantSubscription?
   payments     Payment[]
+  invoices     Invoice[]
+}
+
+model Invoice {
+  id             String   @id @default(cuid())
+  tenantId       String
+  tenant         Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  // Identificador estable visible en panel y cliente. Formato:
+  // <YYYY-MM>-<tenantSlug>, p.ej. "2026-04-acme-shop".
+  number         String   @unique
+
+  // Periodo facturado en formato "YYYY-MM".
+  periodMonth    String
+
+  amountCents    Int
+  // pending | paid | cancelled
+  status         String   @default("pending")
+
+  issuedAt       DateTime @default(now())
+  dueDate        DateTime?
+  paidAt         DateTime?
+  paymentMethod  String?
+  paymentReference String?
+  notes          String?
+
+  // Estado de sincronización con el cliente (Mercantia tenant app).
+  // null = aún no se ha intentado / push pendiente.
+  syncedAt       DateTime?
+  syncStatus     String?
+  syncError      String?
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@unique([tenantId, periodMonth])
+  @@index([status])
+  @@index([periodMonth])
 }
 
 model Payment {

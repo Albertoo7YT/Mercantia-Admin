@@ -28,6 +28,7 @@ import { TenantStatusBadge } from "@/components/tenant-status-badge";
 import { loadBillingSummary } from "@/lib/billing";
 import { formatEur } from "@/lib/money";
 import { formatDate, formatRelativeDate } from "@/lib/utils";
+import { GenerateInvoicesButton } from "./generate-invoices-button";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Facturación · Mercantia Admin" };
@@ -57,6 +58,7 @@ export default async function BillingPage({ searchParams }: PageProps) {
       <PageHeader
         title="Facturación"
         description={`${totals.activeTenants} cliente${totals.activeTenants === 1 ? "" : "s"} activo${totals.activeTenants === 1 ? "" : "s"} · ${formatEur(totals.mrrCents)} MRR`}
+        actions={<GenerateInvoicesButton />}
       />
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">

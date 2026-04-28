@@ -32,6 +32,7 @@ import {
 import { ErrorState } from "@/components/ui/error-state";
 import { UsageBar } from "@/components/plans/usage-bar";
 import { PaymentsCard } from "@/components/tenant/payments-card";
+import { InvoicesCard } from "@/components/tenant/invoices-card";
 import { useToast } from "@/hooks/use-toast";
 import {
   centsToEuros,
@@ -472,6 +473,8 @@ export function SubscriptionTab({ tenantId }: { tenantId: string }) {
         draft={draft}
         onChange={setDraft}
       />
+
+      <InvoicesCard tenantId={tenantId} />
 
       <PaymentsCard tenantId={tenantId} />
     </div>
