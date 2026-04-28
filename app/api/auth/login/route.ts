@@ -2,9 +2,9 @@ import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
-import { env } from "@/lib/env";
 import { prisma } from "@/lib/db";
 import { createSession, sessionCookieOptions } from "@/lib/auth/session";
+import { getAdminPasswordHash } from "@/lib/auth/admin-password";
 
 export const runtime = "nodejs";
 
@@ -25,7 +25,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Cuerpo inválido" }, { status: 400 });
   }
 
-  const hash = env.ADMIN_PASSWORD();
+  const hash = getAdminPasswordHash();
   let valid = false;
   try {
     valid = await bcrypt.compare(parsed.password, hash);
