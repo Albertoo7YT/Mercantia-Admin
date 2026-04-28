@@ -13,6 +13,7 @@ import {
 import { PageHeader } from "@/components/page-header";
 import { TenantStatusBadge } from "@/components/tenant-status-badge";
 import { HealthIndicator } from "@/components/tenant/health-indicator";
+import { MaintenanceIndicator } from "@/components/tenant/maintenance-indicator";
 import { formatRelativeDate } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
@@ -68,12 +69,15 @@ export default async function TenantsPage() {
                   className="cursor-pointer"
                 >
                   <TableCell className="font-medium">
-                    <Link
-                      href={`/tenants/${t.id}`}
-                      className="hover:underline"
-                    >
-                      {t.name}
-                    </Link>
+                    <div className="flex items-center gap-2">
+                      <Link
+                        href={`/tenants/${t.id}`}
+                        className="hover:underline"
+                      >
+                        {t.name}
+                      </Link>
+                      <MaintenanceIndicator tenantId={t.id} />
+                    </div>
                   </TableCell>
                   <TableCell className="font-mono text-xs text-muted-foreground">
                     {t.slug}

@@ -19,9 +19,12 @@ export default async function LoginPage({ searchParams }: Props) {
     <main className="grid min-h-screen place-items-center bg-gradient-to-br from-slate-50 via-white to-slate-100 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
       <div className="w-full max-w-sm px-6">
         <div className="mb-8 text-center">
-          <div className="mx-auto mb-3 grid size-12 place-items-center rounded-xl bg-slate-900 text-white shadow-sm">
-            <span className="text-lg font-semibold">M</span>
-          </div>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="https://mercantia.pro/logo.png"
+            alt="Mercantia"
+            className="mx-auto mb-4 h-12 w-auto"
+          />
           <h1 className="text-xl font-semibold tracking-tight">
             Mercantia Admin
           </h1>

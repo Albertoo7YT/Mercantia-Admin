@@ -26,11 +26,25 @@ type Tenant = {
   apiUrl: string;
   status: string;
   notes: string | null;
+  backupTargetId: string | null;
+  backupSubdir: string | null;
+};
+
+type BackupTargetOption = {
+  id: string;
+  name: string;
+  host: string;
+  remotePath: string;
+  isDefault: boolean;
 };
 
 type Props =
-  | { mode: "create"; tenant?: undefined }
-  | { mode: "edit"; tenant: Tenant };
+  | { mode: "create"; tenant?: undefined; backupTargets: BackupTargetOption[] }
+  | {
+      mode: "edit";
+      tenant: Tenant;
+      backupTargets: BackupTargetOption[];
+    };
 
 export function TenantForm(props: Props) {
   const [name, setName] = useState(props.tenant?.name ?? "");
@@ -158,6 +172,54 @@ export function TenantForm(props: Props) {
               defaultValue={props.tenant?.notes ?? ""}
               placeholder="Anotaciones internas, contactos, recordatorios…"
             />
+          </div>
+
+          <div className="space-y-3 rounded-md border bg-muted/30 p-3">
+            <div className="text-sm font-medium">Backup remoto</div>
+            <p className="-mt-2 text-xs text-muted-foreground">
+              A qué target SSH se suben los backups de este cliente. Si lo dejas
+              vacío, usa el target marcado como "default".
+            </p>
+
+            <div className="space-y-2">
+              <Label htmlFor="backupTargetId">Target</Label>
+              <Select
+                name="backupTargetId"
+                defaultValue={props.tenant?.backupTargetId ?? "_default"}
+              >
+                <SelectTrigger id="backupTargetId">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="_default">
+                    Usar target por defecto
+                  </SelectItem>
+                  {props.backupTargets.map((t) => (
+                    <SelectItem key={t.id} value={t.id}>
+                      {t.name} · {t.host}:{t.remotePath}
+                      {t.isDefault ? " (default)" : ""}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="backupSubdir">
+                Subcarpeta dentro del target
+              </Label>
+              <Input
+                id="backupSubdir"
+                name="backupSubdir"
+                defaultValue={props.tenant?.backupSubdir ?? ""}
+                maxLength={200}
+                placeholder={`por defecto: ${props.tenant?.slug ?? "<slug>"}`}
+              />
+              <p className="text-xs text-muted-foreground">
+                Si lo dejas vacío, se usa el slug del cliente. Solo a-z, 0-9,
+                <code className="mx-1">. _ - /</code>.
+              </p>
+            </div>
           </div>
 
           <div className="flex items-center gap-2 pt-2">

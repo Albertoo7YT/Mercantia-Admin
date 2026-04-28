@@ -1,8 +1,8 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import Link from "next/link";
-import { Loader2 } from "lucide-react";
+import { CheckCircle2, Loader2, PlugZap, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -44,6 +44,36 @@ export function BackupTargetForm(props: Props) {
   const fieldErr = (key: string) =>
     state && !state.ok ? state.fieldErrors?.[key]?.[0] : undefined;
 
+  const [testing, setTesting] = useState(false);
+  const [testResult, setTestResult] = useState<
+    | { ok: true; ms: number }
+    | { ok: false; error: string; stderr?: string }
+    | null
+  >(null);
+
+  async function runTest() {
+    if (props.mode !== "edit") return;
+    setTesting(true);
+    setTestResult(null);
+    try {
+      const res = await fetch(`/api/backup-targets/${props.target.id}/test`, {
+        method: "POST",
+      });
+      const data = (await res.json()) as
+        | { ok: true; durationMs: number }
+        | { ok: false; error: string; stderr?: string };
+      if (data.ok) {
+        setTestResult({ ok: true, ms: data.durationMs });
+      } else {
+        setTestResult({ ok: false, error: data.error, stderr: data.stderr });
+      }
+    } catch (e) {
+      setTestResult({ ok: false, error: (e as Error).message });
+    } finally {
+      setTesting(false);
+    }
+  }
+
   return (
     <Card className="max-w-2xl">
       <CardContent className="pt-6">
@@ -68,8 +98,8 @@ export function BackupTargetForm(props: Props) {
             ) : null}
           </div>
 
-          <div className="grid grid-cols-3 gap-4">
-            <div className="col-span-2 space-y-2">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <div className="space-y-2 sm:col-span-2">
               <Label htmlFor="host">Host *</Label>
               <Input
                 id="host"
@@ -155,15 +185,54 @@ export function BackupTargetForm(props: Props) {
             />
           </div>
 
-          <div className="flex items-center gap-2 pt-2">
+          <div className="flex flex-wrap items-center gap-2 pt-2">
             <Button type="submit" disabled={pending}>
               {pending ? <Loader2 className="size-4 animate-spin" /> : null}
               {props.mode === "create" ? "Crear target" : "Guardar cambios"}
             </Button>
+            {props.mode === "edit" ? (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={runTest}
+                disabled={testing}
+                title="Verifica que el panel puede conectar al target por SSH"
+              >
+                {testing ? (
+                  <Loader2 className="size-4 animate-spin" />
+                ) : (
+                  <PlugZap className="size-4" />
+                )}
+                Probar conexión
+              </Button>
+            ) : null}
             <Button asChild type="button" variant="ghost">
               <Link href="/backup-targets">Cancelar</Link>
             </Button>
           </div>
+
+          {testResult ? (
+            testResult.ok ? (
+              <Alert variant="info">
+                <CheckCircle2 className="size-4" />
+                <AlertDescription>
+                  Conexión OK · {testResult.ms}ms
+                </AlertDescription>
+              </Alert>
+            ) : (
+              <Alert variant="destructive">
+                <XCircle className="size-4" />
+                <AlertDescription>
+                  <div className="font-medium">{testResult.error}</div>
+                  {testResult.stderr ? (
+                    <pre className="mt-1 max-h-40 overflow-auto whitespace-pre-wrap rounded bg-background/40 p-2 text-[11px] text-muted-foreground">
+                      {testResult.stderr}
+                    </pre>
+                  ) : null}
+                </AlertDescription>
+              </Alert>
+            )
+          ) : null}
         </form>
       </CardContent>
     </Card>

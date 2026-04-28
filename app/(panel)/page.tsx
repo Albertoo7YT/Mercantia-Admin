@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { AlertTriangle } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -6,9 +7,11 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/components/page-header";
 import { OperationLogTable } from "@/components/operation-log-table";
 import { prisma } from "@/lib/db";
+import { loadAllSubscriptions } from "@/lib/subscriptions-aggregator";
 
 export const dynamic = "force-dynamic";
 
@@ -40,7 +43,15 @@ async function getMetrics() {
 }
 
 export default async function DashboardPage() {
-  const m = await getMetrics();
+  const [m, subscriptions] = await Promise.all([
+    getMetrics(),
+    loadAllSubscriptions().catch(() => []),
+  ]);
+
+  const nearLimit = subscriptions
+    .filter((row) => row.online && row.highestUsagePct >= 80)
+    .sort((a, b) => b.highestUsagePct - a.highestUsagePct)
+    .slice(0, 5);
 
   return (
     <>
@@ -74,6 +85,69 @@ export default async function DashboardPage() {
           href="/logs"
         />
       </div>
+
+      {nearLimit.length > 0 ? (
+        <section className="mt-8">
+          <Card className="border-amber-300/60 bg-amber-50/30 dark:bg-amber-950/10">
+            <CardHeader className="pb-2">
+              <CardTitle className="flex items-center gap-2 text-sm font-medium text-amber-900 dark:text-amber-200">
+                <AlertTriangle className="size-4" />
+                Clientes cerca del límite
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-1.5">
+              {nearLimit.map((row) => {
+                const u = row.clientPlan?.usage;
+                if (!u) return null;
+                const items: Array<{
+                  label: string;
+                  used: number;
+                  limit: number;
+                  pct: number;
+                }> = [];
+                const push = (label: string, used: number, limit: number) => {
+                  if (limit > 0 && used / limit >= 0.8) {
+                    items.push({
+                      label,
+                      used,
+                      limit,
+                      pct: Math.round((used / limit) * 100),
+                    });
+                  }
+                };
+                push("Sales", u.sales, row.effective.maxSales);
+                push("Office", u.office, row.effective.maxOffice);
+                push("Admins", u.admins, row.effective.maxAdmins);
+                if (items.length === 0) return null;
+                const top = items.sort((a, b) => b.pct - a.pct)[0];
+                return (
+                  <Link
+                    key={row.tenantId}
+                    href={`/tenants/${row.tenantId}?tab=subscription`}
+                    className="flex items-center justify-between gap-3 rounded-md px-2 py-1.5 text-sm hover:bg-amber-100/50 dark:hover:bg-amber-900/20"
+                  >
+                    <span className="font-medium">{row.tenantName}</span>
+                    <span className="text-xs text-muted-foreground">
+                      {top.pct}% {top.label} ({top.used}/{top.limit})
+                    </span>
+                    {top.pct >= 100 ? (
+                      <Badge variant="destructive">Sobre límite</Badge>
+                    ) : (
+                      <Badge variant="warning">Cerca</Badge>
+                    )}
+                  </Link>
+                );
+              })}
+              <Link
+                href="/subscriptions"
+                className="mt-2 inline-block text-xs text-muted-foreground hover:underline"
+              >
+                → Ver todos
+              </Link>
+            </CardContent>
+          </Card>
+        </section>
+      ) : null}
 
       <section className="mt-10 space-y-3">
         <div className="flex items-center justify-between">

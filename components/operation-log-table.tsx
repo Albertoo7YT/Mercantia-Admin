@@ -104,12 +104,58 @@ function readToggleDetails(details: unknown): ToggleDetails | null {
   return d;
 }
 
+const ACTION_TYPE_LABELS: Record<string, string> = {
+  deploy: "deploy",
+  restart_pm2: "reinicio PM2",
+  backup_now: "backup manual",
+  maintenance_on: "mantenimiento ON",
+  maintenance_off: "mantenimiento OFF",
+};
+
 function prettyAction(log: OperationLogRow): string {
   if (log.action === "module_toggle") {
     const d = readToggleDetails(log.details);
     if (d && typeof d.module === "string" && typeof d.enabled === "boolean") {
       return `Cambio módulo ${d.module} → ${d.enabled ? "activado" : "desactivado"}`;
     }
+  }
+  if (log.action.startsWith("tenant_action_")) {
+    const type = log.action.slice("tenant_action_".length);
+    return `Acción · ${ACTION_TYPE_LABELS[type] ?? type}`;
+  }
+  if (log.action === "tenant_branding_update") {
+    const d = log.details;
+    if (d && typeof d === "object") {
+      const fields = (d as Record<string, unknown>).fieldsChanged;
+      if (Array.isArray(fields) && fields.length > 0) {
+        return `Branding · ${fields.join(", ")}`;
+      }
+    }
+    return "Branding actualizado";
+  }
+  if (log.action === "tenant_ticket_reply") {
+    const d = log.details as Record<string, unknown> | null;
+    const internal = d && d.internalNote === true;
+    const count =
+      d && typeof d.attachmentsCount === "number"
+        ? (d.attachmentsCount as number)
+        : 0;
+    return `Ticket · respuesta${internal ? " (nota interna)" : ""}${
+      count > 0 ? ` · ${count} adjuntos` : ""
+    }`;
+  }
+  if (log.action === "tenant_ticket_status_change") {
+    const d = log.details as Record<string, unknown> | null;
+    const newStatus = d?.newStatus;
+    return `Ticket · estado → ${
+      typeof newStatus === "string" ? newStatus : "?"
+    }`;
+  }
+  if (log.action === "tenant_ticket_attachment_download") {
+    const d = log.details as Record<string, unknown> | null;
+    const filename =
+      typeof d?.filename === "string" ? d.filename : "(adjunto)";
+    return `Ticket · descarga ${filename}`;
   }
   return log.action;
 }
@@ -120,6 +166,18 @@ function detailLine(log: OperationLogRow): string {
     const d = readToggleDetails(log.details);
     if (d?.reason && typeof d.reason === "string") {
       return `motivo: ${d.reason}`;
+    }
+  }
+  if (log.action.startsWith("tenant_action_")) {
+    const d = log.details;
+    if (d && typeof d === "object") {
+      const obj = d as Record<string, unknown>;
+      const parts: string[] = [];
+      if (typeof obj.exitCode === "number") parts.push(`exit ${obj.exitCode}`);
+      if (typeof obj.durationMs === "number") {
+        parts.push(`${(obj.durationMs / 1000).toFixed(1)}s`);
+      }
+      if (parts.length > 0) return parts.join(" · ");
     }
   }
   return "—";

@@ -7,7 +7,19 @@ type PageProps = { params: Promise<{ id: string }> };
 
 export default async function EditTenantPage({ params }: PageProps) {
   const { id } = await params;
-  const tenant = await prisma.tenant.findUnique({ where: { id } });
+  const [tenant, targets] = await Promise.all([
+    prisma.tenant.findUnique({ where: { id } }),
+    prisma.backupTarget.findMany({
+      orderBy: [{ isDefault: "desc" }, { name: "asc" }],
+      select: {
+        id: true,
+        name: true,
+        host: true,
+        remotePath: true,
+        isDefault: true,
+      },
+    }),
+  ]);
   if (!tenant) notFound();
 
   return (
@@ -18,6 +30,7 @@ export default async function EditTenantPage({ params }: PageProps) {
       />
       <TenantForm
         mode="edit"
+        backupTargets={targets}
         tenant={{
           id: tenant.id,
           name: tenant.name,
@@ -25,6 +38,8 @@ export default async function EditTenantPage({ params }: PageProps) {
           apiUrl: tenant.apiUrl,
           status: tenant.status,
           notes: tenant.notes,
+          backupTargetId: tenant.backupTargetId,
+          backupSubdir: tenant.backupSubdir,
         }}
       />
     </>

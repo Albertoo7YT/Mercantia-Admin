@@ -23,11 +23,21 @@ function rawToInput(raw: FormData) {
     "apiToken",
     "status",
     "notes",
+    "backupTargetId",
+    "backupSubdir",
   ]) {
     const v = raw.get(key);
     obj[key] = v === null ? undefined : v;
   }
+  // Sentinel del Select cuando el usuario elige "Usar target por defecto"
+  if (obj.backupTargetId === "_default") obj.backupTargetId = "";
   return obj;
+}
+
+function emptyToNull(v: string | undefined | null) {
+  if (v === undefined || v === null) return null;
+  const t = v.trim();
+  return t.length === 0 ? null : t;
 }
 
 export async function createTenant(_prev: unknown, raw: FormData): Promise<ActionResult> {
@@ -50,6 +60,8 @@ export async function createTenant(_prev: unknown, raw: FormData): Promise<Actio
         apiToken: encrypt(parsed.data.apiToken),
         status: parsed.data.status,
         notes: parsed.data.notes || null,
+        backupTargetId: emptyToNull(parsed.data.backupTargetId),
+        backupSubdir: emptyToNull(parsed.data.backupSubdir),
       },
     });
 
@@ -95,6 +107,8 @@ export async function updateTenant(
     apiUrl: parsed.data.apiUrl,
     status: parsed.data.status,
     notes: parsed.data.notes || null,
+    backupTargetId: emptyToNull(parsed.data.backupTargetId),
+    backupSubdir: emptyToNull(parsed.data.backupSubdir),
   };
   if (parsed.data.apiToken && parsed.data.apiToken.length > 0) {
     data.apiToken = encrypt(parsed.data.apiToken);

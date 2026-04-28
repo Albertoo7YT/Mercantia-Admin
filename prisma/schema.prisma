@@ -15,11 +15,103 @@ model Tenant {
   apiToken  String
   status    String   @default("active")
   notes     String?
+
+  // Backup destination override. Si null, se usa el target con isDefault=true.
+  // El subdir, si null, cae a slug del tenant.
+  backupTargetId String?
+  backupTarget   BackupTarget? @relation("TenantBackupTarget", fields: [backupTargetId], references: [id], onDelete: SetNull)
+  backupSubdir   String?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  syncs BackupSync[]
-  logs  OperationLog[]
+  syncs        BackupSync[]
+  logs         OperationLog[]
+  subscription TenantSubscription?
+  payments     Payment[]
+}
+
+model Payment {
+  id        String   @id @default(cuid())
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  amount    Int
+  type      String
+  paidAt    DateTime
+  method    String?
+  notes     String?
+  reference String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tenantId, paidAt])
+  @@index([type, paidAt])
+}
+
+model Plan {
+  id              String   @id @default(cuid())
+  slug            String   @unique
+  name            String
+
+  monthlyPrice    Int
+  yearlyPrice     Int
+
+  maxAdmins       Int
+  maxOffice       Int
+  maxSales        Int
+
+  multiWarehouse  Boolean  @default(false)
+  apiAccess       Boolean  @default(false)
+
+  description     String?
+  isPopular       Boolean  @default(false)
+  sortOrder       Int      @default(0)
+
+  active          Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  subscriptions   TenantSubscription[]
+}
+
+model TenantSubscription {
+  id              String   @id @default(cuid())
+  tenantId        String   @unique
+  tenant          Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  planId          String?
+  plan            Plan?    @relation(fields: [planId], references: [id])
+
+  customMaxAdmins      Int?
+  customMaxOffice      Int?
+  customMaxSales       Int?
+  customMultiWarehouse Boolean?
+  customApiAccess      Boolean?
+
+  contractStartDate  DateTime?
+  billingCycle       String?
+  customMonthlyPrice Int?
+
+  installationPrice  Int?
+  installationPaidAt DateTime?
+
+  nextPaymentDate    DateTime?
+  paymentStatus      String?  @default("active")
+  paymentMethod      String?
+
+  lastSyncedAt       DateTime?
+  syncStatus         String?
+  syncError          String?
+
+  notes              String?
+
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@index([planId])
+  @@index([paymentStatus])
 }
 
 model BackupTarget {
@@ -34,7 +126,8 @@ model BackupTarget {
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
-  syncs BackupSync[]
+  syncs   BackupSync[]
+  tenants Tenant[]     @relation("TenantBackupTarget")
 }
 
 model BackupSync {

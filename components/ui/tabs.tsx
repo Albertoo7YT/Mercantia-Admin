@@ -6,18 +6,26 @@ import { cn } from "@/lib/utils";
 
 const Tabs = TabsPrimitive.Root;
 
+/**
+ * Wrapper externo con scroll horizontal para que un TabsList con muchos
+ * triggers (ej. la página de detalle de tenant con 9 tabs) se pueda
+ * deslizar lateralmente en móvil sin romper el layout. La barrita de
+ * scroll se oculta vía utilidad propia o estilo del browser.
+ */
 const TabsList = React.forwardRef<
   React.ElementRef<typeof TabsPrimitive.List>,
   React.ComponentPropsWithoutRef<typeof TabsPrimitive.List>
 >(({ className, ...props }, ref) => (
-  <TabsPrimitive.List
-    ref={ref}
-    className={cn(
-      "inline-flex h-10 items-center justify-center rounded-md bg-muted p-1 text-muted-foreground",
-      className,
-    )}
-    {...props}
-  />
+  <div className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
+    <TabsPrimitive.List
+      ref={ref}
+      className={cn(
+        "inline-flex h-10 w-max items-center justify-center rounded-md bg-muted p-1 text-muted-foreground",
+        className,
+      )}
+      {...props}
+    />
+  </div>
 ));
 TabsList.displayName = TabsPrimitive.List.displayName;
 
