@@ -1532,19 +1532,25 @@ export const tenantApi = {
     ) =>
       makeTenantApiCall<{ ok: boolean }>(
         id,
-        "/api/admin/system/invoices",
-        { method: "POST", body: payload, timeoutMs: 10_000 },
+        // El cliente expone esta ruta con `payments` (acepta `number` como
+        // alias legacy de `reference`).
+        "/api/admin/system/payments",
+        {
+          method: "POST",
+          body: { ...payload, reference: payload.number },
+          timeoutMs: 10_000,
+        },
         { action: "tenant.invoices.push" },
       ),
     /**
-     * Borra (o cancela) una factura del cliente. El cliente debe aceptar
-     * DELETE por `number`.
+     * Borra (o cancela) una factura del cliente. El cliente expone DELETE
+     * en /api/admin/system/payments/:reference.
      */
     delete: (id: string, number: string) =>
       makeTenantApiCall<{ ok: boolean }>(
         id,
-        `/api/admin/system/invoices/${encodeURIComponent(number)}`,
-        { method: "DELETE" },
+        `/api/admin/system/payments/${encodeURIComponent(number)}`,
+        { method: "DELETE", timeoutMs: 10_000 },
         { action: "tenant.invoices.delete" },
       ),
   },
