@@ -34,14 +34,19 @@ async function main() {
   // Probamos varios formatos hasta dar con uno que sobreviva al loader de
   // @next/env. dotenv-expand expande `$VAR` por defecto y los hashes bcrypt
   // empiezan por `$2a$12$...`, así que necesitamos escapar.
+  // Orden deliberado: las comillas simples nunca expanden variables y son el
+  // formato más portable. Las dobles + escape solo funcionan si el runtime
+  // procesa `\$`, lo cual no es universal (en prod con @next/env nuevo
+  // funciona en la verificación pero falla en next start). Por eso van al
+  // final como fallback.
   const candidates = [
+    { label: "single quotes", line: `ADMIN_PASSWORD='${hash}'` },
+    { label: "no quotes", line: `ADMIN_PASSWORD=${hash}` },
+    { label: "no quotes + \\$ escape", line: `ADMIN_PASSWORD=${hash.replace(/\$/g, "\\$")}` },
     {
       label: "double quotes + \\$ escape",
       line: `ADMIN_PASSWORD="${hash.replace(/\$/g, "\\$")}"`,
     },
-    { label: "single quotes", line: `ADMIN_PASSWORD='${hash}'` },
-    { label: "no quotes + \\$ escape", line: `ADMIN_PASSWORD=${hash.replace(/\$/g, "\\$")}` },
-    { label: "no quotes", line: `ADMIN_PASSWORD=${hash}` },
   ];
 
   const original = fs.readFileSync(envFile, "utf8");
