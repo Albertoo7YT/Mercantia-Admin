@@ -163,3 +163,63 @@ export async function scpUpload(
 export async function ensureLocalDir(p: string) {
   await mkdir(dirname(p), { recursive: true });
 }
+
+export type RetentionResult =
+  | { ok: true; kept: number; deleted: string[]; durationMs: number }
+  | { ok: false; error: string; stderr?: string; durationMs: number };
+
+/**
+ * Aplica retención en el target: lista los ficheros de remoteDir ordenados por
+ * fecha (descendente) y borra los que excedan keep. Implementado con un único
+ * comando ssh para no abrir N conexiones.
+ */
+export async function applyRetention(
+  target: SshTarget,
+  remoteDir: string,
+  keep: number,
+  timeoutMs: number = DEFAULT_TIMEOUT_MS,
+): Promise<RetentionResult> {
+  if (keep < 1) {
+    return {
+      ok: false,
+      error: "retention debe ser >= 1",
+      durationMs: 0,
+    };
+  }
+  const keyErr = await ensureKeyExists(target.sshKeyPath);
+  if (keyErr) {
+    return { ok: false, error: keyErr, durationMs: 0 };
+  }
+  const safe = remoteDir.replace(/'/g, "'\\''");
+  // Lista por mtime descendente, salta los `keep` primeros, e imprime/borra el resto.
+  // -- '${safe}' protege rutas con espacios.
+  const remoteCmd = `
+    cd '${safe}' 2>/dev/null || exit 0
+    ls -t -1 -p 2>/dev/null | grep -v '/$' | tail -n +$((${keep} + 1)) | while read -r f; do
+      echo "DEL:$f"
+      rm -f -- "$f"
+    done
+  `.trim();
+  const args = [
+    ...COMMON_SSH_OPTS,
+    "-i", target.sshKeyPath,
+    "-p", String(target.port),
+    `${target.username}@${target.host}`,
+    remoteCmd,
+  ];
+  const result = await runProcess("ssh", args, timeoutMs);
+  if (!result.ok) {
+    return result;
+  }
+  const deleted = result.stdout
+    .split("\n")
+    .map((l) => l.trim())
+    .filter((l) => l.startsWith("DEL:"))
+    .map((l) => l.slice(4));
+  return {
+    ok: true,
+    kept: keep,
+    deleted,
+    durationMs: result.durationMs,
+  };
+}

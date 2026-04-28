@@ -6,6 +6,7 @@ import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
@@ -28,6 +29,11 @@ type Tenant = {
   notes: string | null;
   backupTargetId: string | null;
   backupSubdir: string | null;
+  backupScheduleEnabled: boolean;
+  backupScheduleHours: number[];
+  backupRetention: number;
+  backupLastRunAt: string | null;
+  backupLastRunStatus: string | null;
 };
 
 type BackupTargetOption = {
@@ -220,6 +226,73 @@ export function TenantForm(props: Props) {
                 <code className="mx-1">. _ - /</code>.
               </p>
             </div>
+
+            <div className="flex items-center justify-between rounded-md border bg-card p-3">
+              <div>
+                <Label htmlFor="backupScheduleEnabled" className="text-sm font-medium">
+                  Backups automáticos
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  Si está activo, el panel dispara y sube backups en las horas indicadas.
+                </p>
+              </div>
+              <Switch
+                id="backupScheduleEnabled"
+                name="backupScheduleEnabled"
+                defaultChecked={props.tenant?.backupScheduleEnabled ?? false}
+              />
+            </div>
+
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="backupScheduleHours">
+                  Horas (0-23, separadas por coma)
+                </Label>
+                <Input
+                  id="backupScheduleHours"
+                  name="backupScheduleHours"
+                  defaultValue={(props.tenant?.backupScheduleHours ?? []).join(",")}
+                  placeholder="3 (una vez al día) · 3,15 (dos veces)"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Ejemplos: <code>3</code> = una vez al día a las 3am ·{" "}
+                  <code>3,15</code> = dos veces (3am y 3pm) ·{" "}
+                  <code>0,6,12,18</code> = cada 6h.
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="backupRetention">Retención (copias a conservar)</Label>
+                <Input
+                  id="backupRetention"
+                  name="backupRetention"
+                  type="number"
+                  min={1}
+                  max={365}
+                  defaultValue={props.tenant?.backupRetention ?? 30}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Las copias más antiguas se borran del target al exceder este número.
+                </p>
+              </div>
+            </div>
+
+            {props.mode === "edit" && props.tenant.backupLastRunAt ? (
+              <div className="rounded-md border bg-card p-3 text-xs text-muted-foreground">
+                Última ejecución programada:{" "}
+                <span className="font-mono">
+                  {new Date(props.tenant.backupLastRunAt).toLocaleString()}
+                </span>
+                {" · "}
+                {props.tenant.backupLastRunStatus === "success" ? (
+                  <span className="text-emerald-600">éxito</span>
+                ) : props.tenant.backupLastRunStatus === "error" ? (
+                  <span className="text-destructive">error</span>
+                ) : (
+                  props.tenant.backupLastRunStatus
+                )}
+              </div>
+            ) : null}
           </div>
 
           <div className="flex items-center gap-2 pt-2">

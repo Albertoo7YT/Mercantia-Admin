@@ -22,6 +22,18 @@ model Tenant {
   backupTarget   BackupTarget? @relation("TenantBackupTarget", fields: [backupTargetId], references: [id], onDelete: SetNull)
   backupSubdir   String?
 
+  // Programación automática de backups. Si scheduleEnabled=true, el worker
+  // del panel dispara backup_now + sync a las horas indicadas.
+  // - scheduleHours: array de horas en formato 0-23 (hora local del panel).
+  //   Ej: [3] = una vez al día a las 3am. [3, 15] = dos veces al día.
+  // - retention: número máximo de ficheros a conservar en el target.
+  //   El worker borra los más antiguos al exceder este número.
+  backupScheduleEnabled Boolean @default(false)
+  backupScheduleHours   Int[]   @default([])
+  backupRetention       Int     @default(30)
+  backupLastRunAt       DateTime?
+  backupLastRunStatus   String?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

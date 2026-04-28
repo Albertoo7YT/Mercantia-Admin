@@ -40,6 +40,13 @@ export default async function EditTenantPage({ params }: PageProps) {
           notes: tenant.notes,
           backupTargetId: tenant.backupTargetId,
           backupSubdir: tenant.backupSubdir,
+          backupScheduleEnabled: tenant.backupScheduleEnabled,
+          backupScheduleHours: tenant.backupScheduleHours,
+          backupRetention: tenant.backupRetention,
+          backupLastRunAt: tenant.backupLastRunAt
+            ? tenant.backupLastRunAt.toISOString()
+            : null,
+          backupLastRunStatus: tenant.backupLastRunStatus,
         }}
       />
     </>

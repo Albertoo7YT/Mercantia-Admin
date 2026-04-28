@@ -26,6 +26,39 @@ const optionalBackupTargetId = z
   .optional()
   .or(z.literal(""));
 
+// Hours como string CSV ("3" o "3,15") → array de ints 0-23.
+const backupScheduleHours = z
+  .union([z.string(), z.array(z.number()), z.null()])
+  .optional()
+  .transform((v) => {
+    if (v === null || v === undefined || v === "") return [];
+    if (Array.isArray(v)) return v;
+    return v
+      .split(",")
+      .map((s) => s.trim())
+      .filter((s) => s.length > 0)
+      .map((s) => parseInt(s, 10))
+      .filter((n) => Number.isFinite(n));
+  })
+  .pipe(
+    z
+      .array(z.number().int().min(0).max(23))
+      .max(24)
+      .transform((arr) => Array.from(new Set(arr)).sort((a, b) => a - b)),
+  );
+
+const backupScheduleEnabled = z
+  .union([z.boolean(), z.literal("on"), z.literal(""), z.null(), z.undefined()])
+  .transform((v) => v === true || v === "on");
+
+const backupRetention = z
+  .union([z.string(), z.number(), z.null(), z.undefined()])
+  .transform((v) => {
+    if (v === null || v === undefined || v === "") return 30;
+    const n = typeof v === "string" ? parseInt(v, 10) : v;
+    return Number.isFinite(n) && n >= 1 ? Math.min(n, 365) : 30;
+  });
+
 export const tenantCreateSchema = z.object({
   name: z.string().min(1).max(120),
   slug: slugSchema,
@@ -35,6 +68,9 @@ export const tenantCreateSchema = z.object({
   notes: z.string().max(2000).optional().or(z.literal("")),
   backupTargetId: optionalBackupTargetId,
   backupSubdir: optionalSubdir,
+  backupScheduleEnabled,
+  backupScheduleHours,
+  backupRetention,
 });
 
 export const tenantUpdateSchema = z.object({
@@ -46,6 +82,9 @@ export const tenantUpdateSchema = z.object({
   notes: z.string().max(2000).optional().or(z.literal("")),
   backupTargetId: optionalBackupTargetId,
   backupSubdir: optionalSubdir,
+  backupScheduleEnabled,
+  backupScheduleHours,
+  backupRetention,
 });
 
 export type TenantCreateInput = z.infer<typeof tenantCreateSchema>;

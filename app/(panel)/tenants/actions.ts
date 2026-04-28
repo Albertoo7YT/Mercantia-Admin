@@ -25,6 +25,9 @@ function rawToInput(raw: FormData) {
     "notes",
     "backupTargetId",
     "backupSubdir",
+    "backupScheduleEnabled",
+    "backupScheduleHours",
+    "backupRetention",
   ]) {
     const v = raw.get(key);
     obj[key] = v === null ? undefined : v;
@@ -62,6 +65,9 @@ export async function createTenant(_prev: unknown, raw: FormData): Promise<Actio
         notes: parsed.data.notes || null,
         backupTargetId: emptyToNull(parsed.data.backupTargetId),
         backupSubdir: emptyToNull(parsed.data.backupSubdir),
+        backupScheduleEnabled: parsed.data.backupScheduleEnabled,
+        backupScheduleHours: parsed.data.backupScheduleHours,
+        backupRetention: parsed.data.backupRetention,
       },
     });
 
@@ -109,6 +115,9 @@ export async function updateTenant(
     notes: parsed.data.notes || null,
     backupTargetId: emptyToNull(parsed.data.backupTargetId),
     backupSubdir: emptyToNull(parsed.data.backupSubdir),
+    backupScheduleEnabled: parsed.data.backupScheduleEnabled,
+    backupScheduleHours: parsed.data.backupScheduleHours,
+    backupRetention: parsed.data.backupRetention,
   };
   if (parsed.data.apiToken && parsed.data.apiToken.length > 0) {
     data.apiToken = encrypt(parsed.data.apiToken);

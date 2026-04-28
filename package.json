@@ -18,6 +18,7 @@
     "seed:admin": "node --import tsx scripts/seed-admin.ts",
     "seed:plans": "node --import tsx scripts/seed-plans.ts",
     "test:tenant": "node --import tsx scripts/test-tenant-connection.ts",
+    "backup:scheduler": "node --import tsx scripts/backup-scheduler.ts",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:predeploy": "npm run typecheck && npm run test && npm run build"
